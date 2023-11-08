@@ -1,0 +1,16 @@
+# learn-rust projects
+learn-rust/*/target/*
+
+!learn-rust/*/target/debug
+learn-rust/*/target/debug/*
+
+!learn-rust/*/target/debug/*.exe
+
+
+# standalone folders
+*/target/*
+
+!*/target/debug
+*/target/debug/*
+
+!*/target/debug/*.exe
