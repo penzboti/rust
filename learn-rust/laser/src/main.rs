@@ -26,6 +26,9 @@ fn _print_type_of<T>(_: &T) {
 
 // get terminal size with crossterm
 fn get_terminal_size() -> HashMap<String, u16>{
+    // ty for showing me hashmaps
+    // https://stackoverflow.com/a/55376723/12706133
+    // &
     // cool hashmap tutorial
     // https://www.koderhq.com/tutorial/rust/hashmap/
     let mut size: HashMap<String, u16> = HashMap::new();
@@ -86,11 +89,15 @@ fn main() -> std::io::Result<()> {
     enable_raw_mode().expect("Could not turn on Raw mode");
     // massive help on keyboard events from this guide
     // https://medium.com/@otukof/build-your-text-editor-with-rust-part-2-74e03daef237
+    // and also some help from this guide
+    // https://stackoverflow.com/a/60130920/12706133
+    // but they were both outdated
     loop {
         if let Event::Key(event) = event::read().expect("Failed to read line") {
             match event {
-                // documentation on keyEvents:
+                // documentation on keyEvents
                 // https://docs.rs/crossterm/0.27.0/crossterm/event/struct.KeyEvent.html
+                // controlling one
                 KeyEvent {
                     code: KeyCode::Char('w'),
                     modifiers: event::KeyModifiers::NONE,
@@ -115,10 +122,54 @@ fn main() -> std::io::Result<()> {
                     kind: event::KeyEventKind::Press,
                     state: event::KeyEventState::NONE
                 } => println!("d"),
+                // controlling the other
+                KeyEvent {
+                    code: KeyCode::Up,
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("↑"),
+                KeyEvent {
+                    code: KeyCode::Left,
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("←"),
+                KeyEvent {
+                    code: KeyCode::Down,
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("↓"),
+                KeyEvent {
+                    code: KeyCode::Right,
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("→"),
+                // switch inputs
+                KeyEvent {
+                    code: KeyCode::Tab,
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("Tab"),
+                KeyEvent {
+                    code: KeyCode::Char(' '),
+                    modifiers: event::KeyModifiers::NONE,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => println!("Space"),
                 // break out from program
                 KeyEvent {
                     code: KeyCode::Char('c'),
                     modifiers: event::KeyModifiers::CONTROL,
+                    kind: event::KeyEventKind::Press,
+                    state: event::KeyEventState::NONE
+                } => break,
+                KeyEvent {
+                    code: KeyCode::Enter,
+                    modifiers: event::KeyModifiers::NONE,
                     kind: event::KeyEventKind::Press,
                     state: event::KeyEventState::NONE
                 } => break,

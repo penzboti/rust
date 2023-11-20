@@ -12,7 +12,7 @@ Make both inputs flicker. At different times ofc.
 # todo
 inputs stuff:
  - [x] get screen size
- - [ ] keyboard input detection (not fully developped)
+ - [x] keyboard input detection (i mean it only prints out inputs, but it still detects them)
  - [ ] switch input types
 variable stuff:
  - [ ] storing laser variables
