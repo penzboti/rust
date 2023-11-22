@@ -13,10 +13,10 @@ Make both inputs flicker. At different times ofc.
 inputs stuff:
  - [x] get screen size
  - [x] keyboard input detection (i mean it only prints out inputs, but it still detects them)
- - [ ] switch input types
+ - [x] switch input types
 variable stuff:
- - [ ] storing laser variables
- - [ ] changing laser variables
+ - [x] storing laser variables
+ - [x] changing laser variables
 rendering stuff:
  - [ ] rendering pointer and target
  - [ ] rendering line

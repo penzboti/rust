@@ -8,12 +8,10 @@
 
 // imports, these make the program overall shorter
 use std::io::{Write, stdout};
-// crossterm
-// https://crates.io/crates/crossterm 
 use crossterm::terminal::{enable_raw_mode, disable_raw_mode, };
 use crossterm::event::{self, Event};
 
-// for importing external macros (you can also import them normally btw)
+// for importing external macros (you can also import them with normal 'use' btw)
 #[macro_use]
 extern crate crossterm;
 
@@ -27,8 +25,9 @@ pub fn _print_type_of<T>(_: &T) {
 // importing modules
 // https://youtu.be/969j0qnJGi8?si=xfPuPJfgoRw_Woud
 mod keyboard;
+mod publicvars;
+mod position;
 mod render;
-pub mod handle_move;
 mod cmd;
 
 // this exists raw_mode if the program crashes, or probably on exit aswell
@@ -42,28 +41,16 @@ impl Drop for CleanUp {
 
 fn main() -> std::io::Result<()> {
     
-    //TODO: public variables
-    let mut pointer_xpos: u16 = 0;
-    let mut pointer_ypos: u16 = 0;
-    let mut target_xpos: u16 = 0;
-    let mut target_ypos: u16 = 0;
-    let mut wasdmode = true;
-    
     let _clean_up = CleanUp;
     let mut stdout = stdout();
     enable_raw_mode().expect("Could not turn on Raw mode");
-    // massive help on keyboard events from this guide
-    // https://medium.com/@otukof/build-your-text-editor-with-rust-part-2-74e03daef237
-    // and also some help from this guide
-    // https://stackoverflow.com/a/60130920/12706133
-    // but they were both outdated
     loop {
         if let Event::Key(event) = event::read().expect("Failed to read line") {
             match keyboard::match_keyboard_event(event) {
                 None => {},
                 Some(val) => if val {break;},
             }
-            // for debugging purposes
+            // for debugging purposes, printing every event
             // println!("{:?}\r", event);
         }
     }

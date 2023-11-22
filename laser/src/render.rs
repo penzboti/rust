@@ -1,7 +1,8 @@
 use crossterm::terminal::size as termsize;
 use std::collections::HashMap;
+
 // get terminal size with crossterm
-fn get_terminal_size() -> HashMap<String, u16>{
+pub fn get_terminal_size() -> HashMap<String, u16>{
     // ty for showing me hashmaps
     // https://stackoverflow.com/a/55376723/12706133
     // cool hashmap tutorial
@@ -33,3 +34,7 @@ fn get_terminal_size() -> HashMap<String, u16>{
 //         println!("{xcol}")
 //     }
 // }
+
+pub fn render() {
+    crate::publicvars::print_all_vars();
+}

@@ -1,5 +1,11 @@
 use crossterm::event::{self, KeyEvent, KeyCode};
-use crate::handle_move::handle_key;
+use crate::position::handle_key;
+
+// massive help on keyboard events from this guide
+// https://medium.com/@otukof/build-your-text-editor-with-rust-part-2-74e03daef237
+// and also some help from this guide
+// https://stackoverflow.com/a/60130920/12706133
+// but they were both outdated
 
 // ty std::Option <3
 // https://doc.rust-lang.org/rust-by-example/std/option.html
