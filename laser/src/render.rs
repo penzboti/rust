@@ -1,5 +1,7 @@
 use crossterm::terminal::size as termsize;
 use std::collections::HashMap;
+use crate::publicvars::{P_XPOS, P_YPOS, T_XPOS, T_YPOS, update_var};
+use std::sync::atomic::Ordering;
 
 // get terminal size with crossterm
 pub fn get_terminal_size() -> HashMap<String, u16>{
@@ -12,12 +14,28 @@ pub fn get_terminal_size() -> HashMap<String, u16>{
     // https://stackoverflow.com/questions/63859927/how-to-get-a-value-from-a-result
     match termsize() {
         Ok(size_tup) => {
-            size.insert("rows".to_string(), size_tup.1);
             size.insert("cols".to_string(), size_tup.0);
+            size.insert("rows".to_string(), size_tup.1);
         },
         Err(e) => eprintln!("{:?}", e),
     }
     size
+}
+
+pub fn render() {
+    for x in 1..(get_terminal_size()["rows"] + 1) {
+        for j in 1..(get_terminal_size()["cols"] + 1) {
+            if x == P_YPOS.load(Ordering::Relaxed) && j == P_XPOS.load(Ordering::Relaxed) {
+                print!("P");
+            } else if x == T_YPOS.load(Ordering::Relaxed) && j == T_XPOS.load(Ordering::Relaxed) {
+                print!("T");
+            } else {
+                print!(" ");
+            }
+        }
+        println!();
+    }
+    // crate::publicvars::print_all_vars();
 }
 
 //TODO rewrite for future rendering
@@ -34,7 +52,3 @@ pub fn get_terminal_size() -> HashMap<String, u16>{
 //         println!("{xcol}")
 //     }
 // }
-
-pub fn render() {
-    crate::publicvars::print_all_vars();
-}
