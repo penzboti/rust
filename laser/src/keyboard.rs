@@ -9,86 +9,142 @@ use crate::position::handle_key;
 
 // ty std::Option <3
 // https://doc.rust-lang.org/rust-by-example/std/option.html
-pub fn match_keyboard_event(event: KeyEvent) -> Option<bool> {
+pub fn match_keyboard_event(event: KeyEvent) -> Option<String> {
+    let mut key: &str = "";
     match event {
         // documentation on keyEvents
         // https://docs.rs/crossterm/0.27.0/crossterm/event/struct.KeyEvent.html
-        // controlling one
+        // detecting press
         KeyEvent {
             code: KeyCode::Char('w'),
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key('w', ""); None },
+        } => { key = "w_key"; },
         KeyEvent {
             code: KeyCode::Char('a'),
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key('a', ""); None },
+        } => { key = "a_key"; },
         KeyEvent {
             code: KeyCode::Char('s'),
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key('s', ""); None },
+        } => { key = "s_key"; },
         KeyEvent {
             code: KeyCode::Char('d'),
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key('d', ""); None },
+        } => { key = "d_key"; },
         // controlling the other
         KeyEvent {
             code: KeyCode::Left,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Left"); None },
+        } => { key = "Left"; },
         KeyEvent {
             code: KeyCode::Right,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Right"); None },
+        } => { key = "Right"; },
         KeyEvent {
             code: KeyCode::Up,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Up"); None },
+        } => { key = "Up"; },
         KeyEvent {
             code: KeyCode::Down,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Down"); None },
+        } => { key = "Down"; },
+        // release kinds
+        KeyEvent {
+            code: KeyCode::Char('w'),
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "w_key"; },
+        KeyEvent {
+            code: KeyCode::Char('a'),
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "a_key"; },
+        KeyEvent {
+            code: KeyCode::Char('s'),
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "s_key"; },
+        KeyEvent {
+            code: KeyCode::Char('d'),
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "d_key"; },
+        // controlling the other
+        KeyEvent {
+            code: KeyCode::Left,
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "Left"; },
+        KeyEvent {
+            code: KeyCode::Right,
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "Right"; },
+        KeyEvent {
+            code: KeyCode::Up,
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "Up"; },
+        KeyEvent {
+            code: KeyCode::Down,
+            modifiers: event::KeyModifiers::NONE,
+            kind: event::KeyEventKind::Release,
+            state: event::KeyEventState::NONE
+        } => { key = "Down"; },
+
         // switch inputs
         KeyEvent {
             code: KeyCode::Tab,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Tab"); None },
+        } => { key = "Tab"; },
         KeyEvent {
             code: KeyCode::Char(' '),
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => { handle_key(' ', "Space"); None },
+        } => { key = "Space"; },
         // break out from program
         KeyEvent {
             code: KeyCode::Char('c'),
             modifiers: event::KeyModifiers::CONTROL,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => Some(true),
+        } => key = "break",
         KeyEvent {
             code: KeyCode::Enter,
             modifiers: event::KeyModifiers::NONE,
             kind: event::KeyEventKind::Press,
             state: event::KeyEventState::NONE
-        } => Some(true),
-        _ => None,
+        } => key = "break",
+        _ => {},
+    }
+    match key {
+        "break" => None,
+        _ => Some(key.to_string()),
     }
 }

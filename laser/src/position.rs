@@ -1,52 +1,54 @@
-use std::sync::atomic::Ordering;
-use crate::publicvars::WASDMODE;
-use crate::publicvars::{P_XPOS, P_YPOS, T_XPOS, T_YPOS, update_var};
+pub fn handle_key (key_string: String, wasdmode: bool) -> (String, i16, i16) {
+    let mut diff: (&str, i16, i16) = ("", 0, 0);
+    let key = key_string.as_str();
 
-pub fn handle_key (key: char, longkey: &str) {
-    let mut wasdmode = WASDMODE.load(Ordering::Relaxed);
-    let mut res: bool = true;
     if wasdmode {
         match key {
-            'w' => { res = update_var(&P_YPOS, -1, 'y'); },
-            'a' => { res = update_var(&P_XPOS, -1, 'x'); },
-            's' => { res = update_var(&P_YPOS, 1, 'y'); },
-            'd' => { res = update_var(&P_XPOS, 1, 'x'); },
+            "w_key" => { diff = ("pointer", 0, -1); },
+            "a_key" => { diff = ("pointer", -1, 0); },
+            "s_key" => { diff = ("pointer", 0, 1); },
+            "d_key" => { diff = ("pointer", 1, 0); },
             _ => { },
          };
         // https://stackoverflow.com/questions/25383488/how-to-match-a-string-against-string-literals
-        match longkey {
-            "Left" => { res = update_var(&T_XPOS, -1, 'x'); },
-            "Right" => { res = update_var(&T_XPOS, 1, 'x'); },
-            "Up" => { res = update_var(&T_YPOS, -1, 'y'); },
-            "Down" => { res = update_var(&T_YPOS, 1, 'y'); },
+        match key {
+            "Left" => { diff = ("target", -1, 0); },
+            "Right" => { diff = ("target", 1, 0); },
+            "Up" => { diff = ("target", 0, -1); },
+            "Down" => { diff = ("target", 0, 1); },
             _ => {  },
          };
      } else {
         match key {
-            'w' => { res = update_var(&T_YPOS, -1, 'y'); },
-            'a' => { res = update_var(&T_XPOS, -1, 'x'); },
-            's' => { res = update_var(&T_YPOS, 1, 'y'); },
-            'd' => { res = update_var(&T_XPOS, 1, 'x'); },
+            "w_key" => { diff = ("target", 0, -1); },
+            "a_key" => { diff = ("target", -1, 0); },
+            "s_key" => { diff = ("target", 0, 1); },
+            "d_key" => { diff = ("target", 1, 0); },
             _ => { },
          };
-        match longkey {
-            "Left" => { res = update_var(&P_XPOS, -1, 'x'); },
-            "Right" => { res = update_var(&P_XPOS, 1, 'x'); },
-            "Up" => { res = update_var(&P_YPOS, -1, 'y'); },
-            "Down" => { res = update_var(&P_YPOS, 1, 'y'); },
+        match key {
+            "Left" => { diff = ("pointer", -1, 0); },
+            "Right" => { diff = ("pointer", 1, 0); },
+            "Up" => { diff = ("pointer", 0, -1); },
+            "Down" => { diff = ("pointer", 0, 1); },
             _ => { },
         };
     }
-    match longkey {
-        "Space" => wasdmode = !wasdmode,
-        "Tab" => wasdmode = !wasdmode,
-        _ => { },
-    }
 
-    WASDMODE.store(wasdmode, Ordering::Relaxed);
+    (diff.0.to_string(), diff.1, diff.2)
 
-    match res {
-        true => crate::render::render(),
-        false => {},
+}
+
+pub fn update_val( diff: (i16, i16), val: (u16, u16) ) -> Option<(u16, u16)> {
+    let size = crate::render::get_terminal_size();
+    let iresult = (val.0 as i16 + diff.0, val.1 as i16 + diff.1);
+
+    if iresult.0 >= 1 && iresult.1 >= 1 {
+        let uresult = (iresult.0 as u16, iresult.1 as u16);
+        if uresult.0 <= size["cols"] || uresult.1 <= size["rows"] {
+            return Some(uresult);
+        }
     }
+    
+    None
 }
