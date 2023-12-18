@@ -13,11 +13,6 @@ Move them with wasd, and arrow keys. Switch inputs with the space & tab key. Exi
  - [x] get screen size
  - [x] keyboard input detection (i mean it only prints out inputs, but it still detects them)
  - [x] switch input types
- - [ ] holding input results in a constant position change
-```
-this means refactoring a whole lot of code:
-```
-see in [refactor](#refactor)
 
 ## variable stuff:
  - [x] storing laser variables
@@ -25,13 +20,7 @@ see in [refactor](#refactor)
 ## rendering stuff:
  - [x] rendering pointer and target
  - [ ] rendering line
- - [ ] fix raw input mode. (println! still works, even tough they said it won't)
-```
-use this link as guidance into the raw input fetching.
-https://stackoverflow.com/a/67593482/12706133
-
-oh, and also crack down on if i continuous press, then it then quickly switches between press and release. PLEASE disable that!
-```
+ - [ ] fix raw input mode. (println! still works, even tough they said it won't) ((use alternate screen! maybe?))
 
 # refactor
 from my phone's notes.
@@ -40,8 +29,11 @@ from my phone's notes.
 - Make keyboard return a string (change char 'w' to "w_key")
 - Make another set of events that handle release
 - Then handle the key from the main function
-- Also make variables that handle continuous button pressing
-- Q: how fast does it handle it? Maybe we have to put some sort of a delay in that?
+- Also make variables that handle continuous button pressing [^1]
+> Q: how fast does it handle it? Maybe we have to put some sort of a delay in that?
 - Then return the diff we have to change the coordinates
 - Then IN THE MAIN FUNCTION change the position variables
 - And render based on these variables.
+
+[^1]: Sorry, not happening. See in [this file](async.md)
+<!-- i hate to search for everything https://www.markdownguide.org/cheat-sheet/ -->

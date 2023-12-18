@@ -1,3 +1,6 @@
+advent-of-code
+
+# for keeping exe files
 # learn-rust projects
 learn-rust/*/target/*
 

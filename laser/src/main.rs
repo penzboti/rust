@@ -9,7 +9,7 @@
 use std::collections::HashMap;
 // imports, these make the program overall shorter
 use std::io::{Write, stdout};
-use crossterm::terminal::{enable_raw_mode, disable_raw_mode, };
+use crossterm::terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::event::{self, Event};
 
 // for importing external macros (you can also import them with normal 'use' btw)
@@ -27,7 +27,7 @@ pub fn _print_type_of<T>(_: &T) {
 struct CleanUp;
 impl Drop for CleanUp {
     fn drop(&mut self) {
-        disable_raw_mode().expect("Could not disable raw mode")
+        disable_raw_mode().expect("Could not disable raw mode");
     }
 }
 
@@ -44,6 +44,8 @@ pub struct Pos {
     y: u16,
 }
 #[derive(Debug)]
+// we probably won't need any of this struct & impl stuff.
+//TODO: code cleanup & refactor later!
 struct Keys {
     w: bool,
     a: bool,
@@ -108,14 +110,13 @@ fn main() -> std::io::Result<()> {
             // println!("{:?}\r", event);
         }
 
-        // getting the key input still block threads, so i'll use tokio.
-        // seems like this one guy has kind of the same problem
-        // also could use tui for fixing raw_input_mode? i mean let's see what this guy doeas, and the i'll decide
-        // https://users.rust-lang.org/t/text-mode-terminal-application-with-asynchronous-input-output/74760
+        // we could just put this back in the loop now ig
         let mut do_we_render = false;
         for k in keys.iter() {
             if k.1 {
                 let diff = crate::position::handle_key(k.0, wasdmode);
+                // some pointer stuff here
+                // https://www.reddit.com/r/rust/comments/qjk96c/comment/hiqosju/?utm_source=share&utm_medium=web2x&context=3
                 let ptr: &mut Pos;
                 let mut val: (u16, u16) = (0, 0);
                 //TODO: make them never overlap each other
@@ -126,6 +127,7 @@ fn main() -> std::io::Result<()> {
                     // (thank you, copilot)
                     _ => { ptr = &mut dummy; }
                 }
+                // maybe change these to Pos-es, instead of tuples
                 let res = crate::position::update_val((diff.1, diff.2), val);
                 match res {
                     Some(new_val) => { ptr.x = new_val.0; ptr.y = new_val.1; do_we_render = true; },
