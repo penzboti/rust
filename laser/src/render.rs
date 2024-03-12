@@ -13,7 +13,7 @@ pub fn get_terminal_size() -> HashMap<String, u16>{
     match termsize() {
         Ok(size_tup) => {
             size.insert("cols".to_string(), size_tup.0);
-            size.insert("rows".to_string(), size_tup.1);
+            size.insert("rows".to_string(), size_tup.1-1);
         },
         Err(e) => eprintln!("{:?}", e),
     }
@@ -23,6 +23,11 @@ pub fn get_terminal_size() -> HashMap<String, u16>{
 pub fn render(pointer: &crate::Pos, target: &crate::Pos) {
     let size = get_terminal_size();
     for y in 1..(size["rows"] + 1) {
+        // before any laser, this works
+        if pointer.y != y && target.y != y {
+            print!("\r\n");
+            continue;
+        }
         for x in 1..(size["cols"] + 1) {
             if x == pointer.x && y == pointer.y {
                 print!("P");

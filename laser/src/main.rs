@@ -6,7 +6,6 @@
 #![warn(unused_assignments)]
 #![warn(unused_mut)]
 
-use std::collections::HashMap;
 // imports, these make the program overall shorter
 use std::io::{Write, stdout};
 use crossterm::terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
@@ -43,65 +42,64 @@ pub struct Pos {
     x: u16,
     y: u16,
 }
-#[derive(Debug)]
-// we probably won't need any of this struct & impl stuff.
-//TODO: code cleanup & refactor later!
-struct Keys {
-    w: bool,
-    a: bool,
-    s: bool,
-    d: bool,
-    up: bool,
-    down: bool,
-    left: bool,
-    right: bool,
-}
-// https://users.rust-lang.org/t/how-to-iterate-over-fields-of-struct/53356/2
-impl Keys {
-    fn iter(&self) -> [(String, bool); 8] {
-        [
-            ("w_key".to_string(), self.w),
-            ("a_key".to_string(), self.a),
-            ("s_key".to_string(), self.s),
-            ("d_key".to_string(), self.d),
-            ("Up".to_string(), self.up),
-            ("Down".to_string(), self.down),
-            ("Left".to_string(), self.left),
-            ("Right".to_string(), self.right),
-        ]
-    }
-}
 
 fn main() -> std::io::Result<()> {
     let _clean_up = CleanUp;
     let mut stdout = stdout();
+    execute!(std::io::stdout(), EnterAlternateScreen)?;
     enable_raw_mode().expect("Could not turn on Raw mode");
 
     let mut pointer: Pos = Pos {x: 1, y: 1};
     let mut target: Pos = Pos {x: 2, y: 2};
-    let mut dummy: Pos = Pos {x: 0, y: 0};
+    // let mut dummy: Pos = Pos {x: 0, y: 0};
     let mut wasdmode: bool = true;
-    let mut keys:Keys = Keys {w: false, a: false, s: false, d: false, up: false, down: false, left: false, right: false};
 
+    render::render(&pointer, &target);
     loop {
+        // https://stackoverflow.com/questions/34837011/how-to-clear-the-terminal-screen-in-rust-after-a-new-line-is-printed
+        // this also cleares main screen
+        // print!("{esc}c", esc = 27 as char);
+        // this is a better one
+        print!("\x1B[2J\x1B[1;1H");
+
         if let Event::Key(event) = event::read().expect("Failed to read line") {
             match keyboard::match_keyboard_event(event) {
                 Some(val) => {
                     let key = val.as_str();
                     if key != "" {
-                        match key {
-                            "w_key" => { keys.w = !keys.w;  },
-                            "a_key" => { keys.a = !keys.a;  },
-                            "s_key" => { keys.s = !keys.s;  },
-                            "d_key" => { keys.d = !keys.d;  },
-                            "Up" => { keys.up = !keys.up;  },
-                            "Down" => { keys.down = !keys.down;  },
-                            "Left" => { keys.left = !keys.left;  },
-                            "Right" => { keys.right = !keys.right;  },
-                            "Space" => { wasdmode = !wasdmode; },
-                            "Tab" => { wasdmode = !wasdmode; },
-                            _ => { },
+                        if key == "Space" {
+                            wasdmode = !wasdmode;
+                            continue;
                         }
+                        if key == "Tab" {
+                            wasdmode = !wasdmode;
+                            continue;
+                        }
+                        let diff = position::handle_key(String::from(key), wasdmode);
+                        match diff.0.as_str() {
+                            "pointer" => {
+                                let ans = position::update_val((diff.1, diff.2), (pointer.x, pointer.y));
+                                match ans {
+                                    Some(val) => {
+                                        pointer.x = val.0;
+                                        pointer.y = val.1;
+                                    },
+                                    None => {},
+                                }
+                            },
+                            "target" => {
+                                let ans = position::update_val((diff.1, diff.2), (target.x, target.y));
+                                match ans {
+                                    Some(val) => {
+                                        target.x = val.0;
+                                        target.y = val.1;
+                                    },
+                                    None => {},
+                                }
+                            },
+                            _ => {},
+                        }
+                        render::render(&pointer, &target);
                     }
                 },
                 None => break,
@@ -110,35 +108,10 @@ fn main() -> std::io::Result<()> {
             // println!("{:?}\r", event);
         }
 
-        // we could just put this back in the loop now ig
-        let mut do_we_render = false;
-        for k in keys.iter() {
-            if k.1 {
-                let diff = crate::position::handle_key(k.0, wasdmode);
-                // some pointer stuff here
-                // https://www.reddit.com/r/rust/comments/qjk96c/comment/hiqosju/?utm_source=share&utm_medium=web2x&context=3
-                let ptr: &mut Pos;
-                let mut val: (u16, u16) = (0, 0);
-                //TODO: make them never overlap each other
-                match diff.0.as_str() {
-                    "target" => { val = (target.x, target.y); ptr = &mut target; },
-                    "pointer" => { val = (pointer.x, pointer.y); ptr = &mut pointer; },
-                    // we have to do this because of the compiler, there is something weird going on with string literals. but it doesn't know that we're not gonna use this dummy variable
-                    // (thank you, copilot)
-                    _ => { ptr = &mut dummy; }
-                }
-                // maybe change these to Pos-es, instead of tuples
-                let res = crate::position::update_val((diff.1, diff.2), val);
-                match res {
-                    Some(new_val) => { ptr.x = new_val.0; ptr.y = new_val.1; do_we_render = true; },
-                    None => { },
-                }
-            }
-        }
-        if do_we_render { crate::render::render(&pointer, &target); }
     }
 
     // exiting program
+    execute!(std::io::stdout(), LeaveAlternateScreen)?;
     stdout.flush()?;
     Ok(())
 }
