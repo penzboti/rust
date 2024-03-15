@@ -46,12 +46,11 @@ pub struct Pos {
 fn main() -> std::io::Result<()> {
     let _clean_up = CleanUp;
     let mut stdout = stdout();
-    execute!(std::io::stdout(), EnterAlternateScreen)?;
+    execute!(stdout, EnterAlternateScreen, crossterm::cursor::Hide)?;
     enable_raw_mode().expect("Could not turn on Raw mode");
 
     let mut pointer: Pos = Pos {x: 1, y: 1};
     let mut target: Pos = Pos {x: 2, y: 2};
-    // let mut dummy: Pos = Pos {x: 0, y: 0};
     let mut wasdmode: bool = true;
 
     render::render(&pointer, &target);
@@ -59,8 +58,14 @@ fn main() -> std::io::Result<()> {
         // https://stackoverflow.com/questions/34837011/how-to-clear-the-terminal-screen-in-rust-after-a-new-line-is-printed
         // this also cleares main screen
         // print!("{esc}c", esc = 27 as char);
-        // this is a better one
-        print!("\x1B[2J\x1B[1;1H");
+        // this goes to 0,0 cursor pos
+        // print!("\x1B[2J\x1B[1;1H");
+        // should be the same? but isnt but whatever
+        // execute!(stdout, crossterm::cursor::MoveTo(0, 0))?;
+        // crossterm way
+        execute!(stdout, crossterm::terminal::Clear(crossterm::terminal::ClearType::Purge) )?;
+        // wanted to do it this way but realized it doesnt work how i wanted it to
+        // https://unix.stackexchange.com/questions/360198/can-i-overwrite-multiple-lines-of-stdout-at-the-command-line-without-losing-term
 
         if let Event::Key(event) = event::read().expect("Failed to read line") {
             match keyboard::match_keyboard_event(event) {
@@ -111,7 +116,8 @@ fn main() -> std::io::Result<()> {
     }
 
     // exiting program
-    execute!(std::io::stdout(), LeaveAlternateScreen)?;
+    execute!(stdout, LeaveAlternateScreen)?;
+    execute!(stdout, crossterm::cursor::Show)?;
     stdout.flush()?;
     Ok(())
 }

@@ -43,9 +43,9 @@ pub fn update_val( diff: (i16, i16), val: (u16, u16) ) -> Option<(u16, u16)> {
     let size = crate::render::get_terminal_size();
     let iresult = (val.0 as i16 + diff.0, val.1 as i16 + diff.1);
 
-    if iresult.0 >= 1 && iresult.1 >= 1 {
+    if iresult.0 >= 1 && iresult.1 >= 0 {
         let uresult = (iresult.0 as u16, iresult.1 as u16);
-        if uresult.0 <= size["cols"] || uresult.1 <= size["rows"] {
+        if uresult.0 <= size["cols"]-1 && uresult.1 <= size["rows"]-1 {
             return Some(uresult);
         }
     }
