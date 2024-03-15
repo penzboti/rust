@@ -19,8 +19,7 @@ Move them with wasd, and arrow keys. Switch inputs with the space & tab key. Exi
  - [x] changing laser variables
 ## rendering stuff:
  - [x] rendering pointer and target
- - [ ] rendering line
- - [ ] fix raw input mode. (println! still works, even tough they said it won't) ((use alternate screen! maybe?))
+ - [x] rendering line
 
 # refactor
 from my phone's notes.

@@ -1,8 +1,11 @@
 {
 	"folders": [
 		{
-			"path": "laser"
+			"path": "clock"
 		},
+		{
+			"path": "laser"
+		}
 	],
 	"settings": {}
 }
