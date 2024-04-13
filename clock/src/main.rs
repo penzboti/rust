@@ -27,7 +27,7 @@ use ndarray::Array2;
 // ctrl+c exit
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind, KeyEventState};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind};
 
 // https://stackoverflow.com/questions/60273064/rust-best-practices-when-specifying-a-constant-hash-map
 lazy_static! {
@@ -128,8 +128,6 @@ fn get_active_cells(hour: u8, minute: u8) -> Array2<i8> {
     if relative_hour < 10 { hour_string = format!("0{}", hour_string)}
     to_toggle.extend_from_slice(MAP.get(hour_string.as_str()).unwrap());
 
-    // println!("{:?}", to_toggle);
-
     for i in to_toggle {
         let (x, y) = convert_coordinates(i);
         toggle[[x, y]] = 1;
@@ -138,23 +136,23 @@ fn get_active_cells(hour: u8, minute: u8) -> Array2<i8> {
     toggle
 }
 
-fn display_time(_offset: i8) {
-    // we'll use offset another day
+fn display_time(offset: i32) {
 
-    // println!("{}", Local::now().format("%H:%M"));
-    let now = Local::now();
+    let fixed_offset = FixedOffset::west_opt(offset * 60).unwrap();
+
+    let now = Utc::now().with_timezone(&fixed_offset);
+    // println!("{}", now.format("%H:%M"));
     let toggle = get_active_cells(now.hour() as u8, now.minute() as u8);
 
     let termsize = crossterm::terminal::size().unwrap();
-    // println!("{:?}", termsize);
     let offsety = (termsize.1 - 10) / 2;
     let offsetx = (termsize.0 - (11*2)) / 2;
 
     for _i in 0..offsety {
-        // println!("{}", _i);
         println!();
     }
     for i in 0..10 {
+        // this line was made by copilot
         print!("{:width$}", "", width=offsetx as usize);
         for j in 0..11 {
             if toggle[[i, j]] == 1 {
@@ -170,12 +168,50 @@ fn display_time(_offset: i8) {
 }
 
 fn main() -> std::io::Result<()> {
-    // the ctrl+c handling was written by chatgpt
+
+    let args: Vec<String> = std::env::args().collect();
+
+    let mut offset = -(Local::now().offset().fix().local_minus_utc() / 60);
+    
+    if args.len() > 1 {
+        for i in 1..args.len() {
+            let arg = &args[i];
+            if arg == "-offset" || arg == "-o" {
+                let raw_num = &args[i+1];
+                if raw_num.contains(":") {
+                    let mut iter = raw_num.split(":");
+                    let hours = iter.next().unwrap().parse::<i32>().unwrap();
+                    let mut minutes = iter.next().unwrap().parse::<i32>().unwrap();
+                    if hours < 0 {
+                        minutes = -minutes;
+                    }
+                    offset = hours*60 + minutes;
+                } else {
+                    offset = raw_num.parse::<i32>().unwrap()*60;
+                }
+                // println!("Offset: {}", offset);
+            }
+            if arg == "-utc" || arg == "-u" {
+                offset = 0;
+            }
+            if arg == "-help" || arg == "-h" {
+                println!("Usage: clock [options]");
+                println!("\r\nOptions:");
+                println!("-offset, -o <offset>  Set the timezone offset in hours, from UTC.");
+                println!("-utc, -u              Display the current UTC time.");
+                println!("-help, -h             Display this help message.");
+                println!("\r\nBy default it displays your local time.");
+                return Ok(());
+            }
+        }
+    }
+
 
     // Switch to the alternate screen & turn on raw mode & hide cursor
     enable_raw_mode().expect("Failed to enable raw mode");
     execute!(std::io::stdout(), EnterAlternateScreen, MoveToColumn(0), MoveToRow(0), SavePosition, Hide).expect("Failed to enter alternate screen");
-
+    
+    // the ctrl+c handling was written by chatgpt
     // Set up a flag to indicate whether Ctrl+C was pressed
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
@@ -186,9 +222,8 @@ fn main() -> std::io::Result<()> {
     }).expect("Error setting Ctrl-C handler");
 
 
-    let offset = 0;
-
     // local variable setup so that we can run stuff every minute
+    // this is just for updating time at every minute, so this can stay local, because seconds dont change over tz-s
     let local = Local::now();
     // we get local time, add a minute, and then subtract the seconds and milliseconds
     // there is no good way to subtract milliseconds so we're using a workaround
@@ -205,17 +240,16 @@ fn main() -> std::io::Result<()> {
     //* main loop
     while running.load(Ordering::SeqCst) {
         execute!(stdout(), RestorePosition).unwrap();
-        // println!("{}", Local::now().format("%H:%M %S:%3f"));
+        // println!("{}", Local::now().format("%S:%3f"));
 
         if termsize != crossterm::terminal::size().unwrap() {
-            // std::thread::sleep(std::time::Duration::from_millis(100));
             execute!(stdout(), Clear(ClearType::All), RestorePosition).unwrap();
             display_time(offset);
             termsize = size().unwrap();
         }
 
+        // this runs every minute
         if Local::now() >= call_time {
-            // this can run every minute
             // clearing screen
             execute!(stdout(), RestorePosition).unwrap();
 
@@ -225,10 +259,8 @@ fn main() -> std::io::Result<()> {
             call_time = call_time.checked_add_signed(TimeDelta::try_minutes(1).unwrap()).unwrap();
             // println!("calltime: {}", call_time);
         }
-        // slows down main loop. it is higher duration than specified.
-        // also ctrl+c only works when the sleep is over so we cant do minute long sleeps
         // https://users.rust-lang.org/t/how-do-you-make-an-infinite-loop-in-rust-and-make-it-run-with-a-delay/80296
-        // we're just gonna calculate the current millisecond offset and subtract it from 1000
+        // we have to slow down the main loop because we dont need to run it every 10 ms or so
         let millis = 1000 - Local::now().timestamp_millis() % 1000;
         // std::thread::sleep(std::time::Duration::from_millis(millis as u64));
 
@@ -236,10 +268,16 @@ fn main() -> std::io::Result<()> {
         // and also doesnt block the main loop!!!
         // thanks chatgpt
         if let Ok(true) = event::poll(std::time::Duration::from_millis(millis as u64)) {
-            if let Event::Key(KeyEvent { code,  modifiers, kind, state}) = event::read().unwrap() {
+            if let Event::Key(KeyEvent { code,  modifiers, kind , state: _}) = event::read().unwrap() {
                 match code {
-                    KeyCode::Char('c') if code == KeyCode::Char('c') && modifiers == KeyModifiers::CONTROL && kind == KeyEventKind::Press && state == KeyEventState::NONE  => {
-                        // Ctrl+C was pressed
+                    KeyCode::Char('c') | KeyCode::Enter => {
+                        // if ctrl + c is pressed
+                        if code == KeyCode::Char('c') && modifiers != KeyModifiers::CONTROL {
+                            continue;
+                        }
+                        if code == KeyCode::Enter && kind != KeyEventKind::Press {
+                            continue;
+                        }
                         break;
                     }
                     _ => {
