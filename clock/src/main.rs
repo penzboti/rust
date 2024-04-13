@@ -1,17 +1,19 @@
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-#![allow(unused_mut)]
-#![allow(dead_code)]
+// #![allow(unused_imports)]
+// #![allow(unused_variables)]
+// #![allow(unused_mut)]
+// #![allow(dead_code)]
 
 // for time
 use chrono::{prelude::*, TimeDelta};
 
 // for terminal
-use crossterm::terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, Clear, ClearType};
-use crossterm::cursor::{Hide, Show};
+use crossterm::terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, Clear, ClearType, size};
+use crossterm::cursor::{Hide, Show, MoveToColumn, MoveToRow, SavePosition, RestorePosition};
 use std::io::stdout;
 #[macro_use]
 extern crate crossterm;
+// for terminal styling
+use crossterm::style::Stylize;
 
 // for map
 use std::collections::HashMap;
@@ -25,6 +27,7 @@ use ndarray::Array2;
 // ctrl+c exit
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind, KeyEventState};
 
 // https://stackoverflow.com/questions/60273064/rust-best-practices-when-specifying-a-constant-hash-map
 lazy_static! {
@@ -83,17 +86,16 @@ fn convert_coordinates(string: &str) -> (usize, usize) {
     (x, y)
 }
 
-fn get_active_cells(hour: u8, min: u8) -> Array2<i8> {
+fn get_active_cells(hour: u8, minute: u8) -> Array2<i8> {
     // since we cant have an empty array, and there is no good way to fill this up with booleans, we're using integers
-    let mut toggle = Array2::zeros((11, 11));
+    let mut toggle = Array2::zeros((10, 11));
 
     let mut to_toggle: Vec<&str> = vec![];
-    let now = Local::now();
 
     to_toggle.extend_from_slice(MAP.get("it is").unwrap());
 
+    // ! this is translated from my own js code
     //* minute
-    let minute = now.minute();
     // we have 5 minute intervals and after thats done it switches
     let mut relative_min = minute - minute%5;
     // switches at relative 2:00 minutes instead of 2:30 to make it easier for me
@@ -104,6 +106,8 @@ fn get_active_cells(hour: u8, min: u8) -> Array2<i8> {
     if minute > 31 { relative_min = 30 - relative_min; }
     if minute > 31 && relative_min == 30 { relative_min = 0; }
     // we get a string from it to get the correct one from the map
+    // this format thing is cool for template literals
+    // https://internals.rust-lang.org/t/string-interpolation-template-literals-like-js/9082/3
     let mut minute_string: String = format!("{}m", relative_min);
     if relative_min < 10 { minute_string = format!("0{}", minute_string); }
     to_toggle.extend_from_slice(MAP.get(minute_string.as_str()).unwrap());
@@ -114,7 +118,6 @@ fn get_active_cells(hour: u8, min: u8) -> Array2<i8> {
     else if minute > 31 && relative_min != 0 { to_toggle.extend_from_slice(MAP.get("to").unwrap()); }
 
     //* hour
-    let hour = now.hour();
     let mut relative_hour = hour;
     // we need to add one when it switches from "past" to "to"
     if minute > 31 { relative_hour+=1; }
@@ -135,31 +138,43 @@ fn get_active_cells(hour: u8, min: u8) -> Array2<i8> {
     toggle
 }
 
-fn display_time() {
-    println!("{}", Local::now().format("%H:%M"));
-    let toggle = get_active_cells(Local::now().hour() as u8, Local::now().minute() as u8);
-    // println!();
+fn display_time(_offset: i8) {
+    // we'll use offset another day
+
+    // println!("{}", Local::now().format("%H:%M"));
+    let now = Local::now();
+    let toggle = get_active_cells(now.hour() as u8, now.minute() as u8);
+
+    let termsize = crossterm::terminal::size().unwrap();
+    // println!("{:?}", termsize);
+    let offsety = (termsize.1 - 10) / 2;
+    let offsetx = (termsize.0 - (11*2)) / 2;
+
+    for _i in 0..offsety {
+        // println!("{}", _i);
+        println!();
+    }
     for i in 0..10 {
+        print!("{:width$}", "", width=offsetx as usize);
         for j in 0..11 {
             if toggle[[i, j]] == 1 {
                 // https://stackoverflow.com/a/16267760/12706133
-                print!("{}", FACE[[i, j]]);
+                print!("{}", FACE[[i, j]].white());
             } else {
-                print!(" ");
+                print!("{}", FACE[[i, j]].dark_grey().italic());
             }
-            // print!("  ")
+            print!(" ")
         }
         println!();
-        // println!();
     }
 }
 
 fn main() -> std::io::Result<()> {
     // the ctrl+c handling was written by chatgpt
 
-    // Switch to the alternate screen
-    // enable_raw_mode().expect("Failed to enable raw mode");
-    // execute!(std::io::stdout(), EnterAlternateScreen, Hide).expect("Failed to enter alternate screen");
+    // Switch to the alternate screen & turn on raw mode & hide cursor
+    enable_raw_mode().expect("Failed to enable raw mode");
+    execute!(std::io::stdout(), EnterAlternateScreen, MoveToColumn(0), MoveToRow(0), SavePosition, Hide).expect("Failed to enter alternate screen");
 
     // Set up a flag to indicate whether Ctrl+C was pressed
     let running = Arc::new(AtomicBool::new(true));
@@ -171,41 +186,73 @@ fn main() -> std::io::Result<()> {
     }).expect("Error setting Ctrl-C handler");
 
 
+    let offset = 0;
+
     // local variable setup so that we can run stuff every minute
     let local = Local::now();
     // we get local time, add a minute, and then subtract the seconds and milliseconds
-    // there is no good way to subtract milliseconds so this is a workaround
+    // there is no good way to subtract milliseconds so we're using a workaround
     let mut call_time = local.clone()
     .checked_add_signed(TimeDelta::try_minutes(1).unwrap()).unwrap()
     .checked_sub_signed(TimeDelta::try_seconds(local.second() as i64).unwrap()).unwrap()
     .checked_sub_signed(TimeDelta::try_milliseconds(local.clone().checked_sub_signed(TimeDelta::try_seconds(local.timestamp()).unwrap()).unwrap().timestamp_millis()).unwrap()).unwrap();
 
     // initial print
-    display_time();
+    display_time(offset);
+
+    let mut termsize = crossterm::terminal::size().unwrap();
+
     //* main loop
     while running.load(Ordering::SeqCst) {
-        println!("{}", Local::now().format("%H:%M %S:%3f"));
+        execute!(stdout(), RestorePosition).unwrap();
+        // println!("{}", Local::now().format("%H:%M %S:%3f"));
+
+        if termsize != crossterm::terminal::size().unwrap() {
+            // std::thread::sleep(std::time::Duration::from_millis(100));
+            execute!(stdout(), Clear(ClearType::All), RestorePosition).unwrap();
+            display_time(offset);
+            termsize = size().unwrap();
+        }
+
         if Local::now() >= call_time {
             // this can run every minute
             // clearing screen
-            // execute!(stdout(), Clear(ClearType::Purge)).unwrap();
+            execute!(stdout(), RestorePosition).unwrap();
 
-            display_time();
+            display_time(offset);
 
             // changing time to the next minute
             call_time = call_time.checked_add_signed(TimeDelta::try_minutes(1).unwrap()).unwrap();
-            println!("calltime: {}", call_time);
+            // println!("calltime: {}", call_time);
         }
         // slows down main loop. it is higher duration than specified.
         // also ctrl+c only works when the sleep is over so we cant do minute long sleeps
         // https://users.rust-lang.org/t/how-do-you-make-an-infinite-loop-in-rust-and-make-it-run-with-a-delay/80296
         // we're just gonna calculate the current millisecond offset and subtract it from 1000
         let millis = 1000 - Local::now().timestamp_millis() % 1000;
-        std::thread::sleep(std::time::Duration::from_millis(millis as u64));
+        // std::thread::sleep(std::time::Duration::from_millis(millis as u64));
+
+        // this lets me exit even in raw mode and even in the alternate screen and even does the sleeping for me!
+        // and also doesnt block the main loop!!!
+        // thanks chatgpt
+        if let Ok(true) = event::poll(std::time::Duration::from_millis(millis as u64)) {
+            if let Event::Key(KeyEvent { code,  modifiers, kind, state}) = event::read().unwrap() {
+                match code {
+                    KeyCode::Char('c') if code == KeyCode::Char('c') && modifiers == KeyModifiers::CONTROL && kind == KeyEventKind::Press && state == KeyEventState::NONE  => {
+                        // Ctrl+C was pressed
+                        break;
+                    }
+                    _ => {
+                        // Some other key was pressed
+                        continue;
+                    }
+                }
+            }
+        }
     }
 
-    // Leave the alternate screen before exiting
-    // execute!(std::io::stdout(), LeaveAlternateScreen, Show).expect("Failed to leave alternate screen");
-    // disable_raw_mode().expect("Failed to disable raw mode");
+    // Leave the alternate screen & turning off raw mode before exiting
+    execute!(stdout(), LeaveAlternateScreen, Show).expect("Failed to leave alternate screen");
+    disable_raw_mode().expect("Failed to disable raw mode");
     Ok(())
 }
