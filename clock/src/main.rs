@@ -169,39 +169,47 @@ fn display_time(offset: i32) {
 
 fn main() -> std::io::Result<()> {
 
+    // https://doc.rust-lang.org/book/ch12-01-accepting-command-line-arguments.html
     let args: Vec<String> = std::env::args().collect();
 
     let mut offset = -(Local::now().offset().fix().local_minus_utc() / 60);
     
     if args.len() > 1 {
         for i in 1..args.len() {
-            let arg = &args[i];
-            if arg == "-offset" || arg == "-o" {
-                let raw_num = &args[i+1];
-                if raw_num.contains(":") {
-                    let mut iter = raw_num.split(":");
-                    let hours = iter.next().unwrap().parse::<i32>().unwrap();
-                    let mut minutes = iter.next().unwrap().parse::<i32>().unwrap();
-                    if hours < 0 {
-                        minutes = -minutes;
+            let arg = args[i].as_str();
+            match arg {
+                "-offset" | "-o" => {
+                    let raw_num = &args[i+1];
+                    if raw_num.contains(":") {
+                        let mut iter = raw_num.split(":");
+                        let hours = iter.next().unwrap().parse::<i32>().unwrap();
+                        let mut minutes = iter.next().unwrap().parse::<i32>().unwrap();
+                        if hours < 0 {
+                            minutes = -minutes;
+                        }
+                        offset = hours*60 + minutes;
+                    } else {
+                        offset = raw_num.parse::<i32>().unwrap()*60;
                     }
-                    offset = hours*60 + minutes;
-                } else {
-                    offset = raw_num.parse::<i32>().unwrap()*60;
+                    // println!("Offset: {}", offset);
                 }
-                // println!("Offset: {}", offset);
-            }
-            if arg == "-utc" || arg == "-u" {
-                offset = 0;
-            }
-            if arg == "-help" || arg == "-h" {
-                println!("Usage: clock [options]");
-                println!("\r\nOptions:");
-                println!("-offset, -o <offset>  Set the timezone offset in hours, from UTC.");
-                println!("-utc, -u              Display the current UTC time.");
-                println!("-help, -h             Display this help message.");
-                println!("\r\nBy default it displays your local time.");
-                return Ok(());
+                "-utc" | "-u" => {
+                    offset = 0;
+                }
+                "-help" | "-h" => {
+                    println!("Usage: clock [options]");
+                    println!("\r\nOptions:");
+                    println!("-offset, -o <offset>  Set the timezone offset in hours, from UTC.");
+                    println!("-gtm, -g              Display the current UTC time.");
+                    println!("-help, -h             Display this help message.");
+                    println!("\r\nBy default it displays your local time.");
+                    return Ok(());
+                }
+                _ => {
+                    println!("Invalid argument: {}", arg);
+                    println!("Use -help for help.");
+                    return Ok(())
+                }
             }
         }
     }
