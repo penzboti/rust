@@ -167,18 +167,19 @@ fn display_time(offset: i32) {
     }
 }
 
-fn main() -> std::io::Result<()> {
-
-    // https://doc.rust-lang.org/book/ch12-01-accepting-command-line-arguments.html
-    let args: Vec<String> = std::env::args().collect();
-
+// handling command line arguments
+fn get_offset(args: Vec<String>) -> Option<i32> {
     let mut offset = -(Local::now().offset().fix().local_minus_utc() / 60);
+    let mut arg_opt = false;
     
     if args.len() > 1 {
         for i in 1..args.len() {
+            if arg_opt { arg_opt = false; continue; }
             let arg = args[i].as_str();
+
             match arg {
                 "-offset" | "-o" => {
+                    arg_opt = true;
                     let raw_num = &args[i+1];
                     if raw_num.contains(":") {
                         let mut iter = raw_num.split(":");
@@ -196,23 +197,49 @@ fn main() -> std::io::Result<()> {
                 "-utc" | "-u" => {
                     offset = 0;
                 }
+                "-time" | "-t" => {
+                    arg_opt = true;
+                    let raw_num = &args[i+1];
+                    let mut iter = raw_num.split(":");
+                    let hours = iter.next().unwrap().parse::<u32>().unwrap();
+                    let minutes = iter.next().unwrap().parse::<u32>().unwrap();
+                    let time_for_offset = hours*60 + minutes;
+                    let time_to_offset = Utc::now().hour()*60 + Utc::now().minute();
+                    offset = time_to_offset as i32 - time_for_offset as i32;
+                }
                 "-help" | "-h" => {
                     println!("Usage: clock [options]");
                     println!("\r\nOptions:");
                     println!("-offset, -o <offset>  Set the timezone offset in hours, from UTC.");
-                    println!("-gtm, -g              Display the current UTC time.");
+                    println!("-time, -t <time>      Set the time to start the display at.");
+                    println!("-utc, -u              Display the current UTC time.");
                     println!("-help, -h             Display this help message.");
+                    println!("\r\nExamples:");
+                    println!("Offset                -2, 2:30, -5:05, +0:01");
+                    println!("Time                  12:00, 23:59, 0:01");
                     println!("\r\nBy default it displays your local time.");
-                    return Ok(());
+                    return None;
                 }
                 _ => {
                     println!("Invalid argument: {}", arg);
                     println!("Use -help for help.");
-                    return Ok(())
+                    return None;
                 }
             }
         }
     }
+    Some(offset)
+}
+
+fn main() -> std::io::Result<()> {
+
+    // https://doc.rust-lang.org/book/ch12-01-accepting-command-line-arguments.html
+    let args: Vec<String> = std::env::args().collect();
+
+    let offset = match get_offset(args) {
+        Some(offset) => offset,
+        None => return Ok(())
+    };
 
 
     // Switch to the alternate screen & turn on raw mode & hide cursor
