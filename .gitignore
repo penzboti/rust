@@ -1,6 +1,6 @@
 advent-of-code
-mc-playtime
 valence-examples
+# Cargo.lock # remove all of em because we dont need em
 
 # for keeping exe files
 # learn-rust projects
