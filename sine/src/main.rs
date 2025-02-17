@@ -121,7 +121,7 @@ fn main() {
     let _cursor = Cursor::new();
 
     // main loop
-    let mut i: u16 = 0;
+    let mut i: u64 = 0;
     let mut c: i32 = 0;
     while running.load(Ordering::SeqCst) {
         let x = getsine(i as f32 / (options.length as f32 / PI)) * options.width as f32;
