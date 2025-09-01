@@ -1,0 +1,11 @@
+[package]
+name = "ratatetris"
+version = "0.0.1"
+description = "a tetris clone made with ratatui"
+authors = ["penzboti <penzboti@gmail.com>"]
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+crossterm = "0.28.1"
+ratatui = "0.29.0"

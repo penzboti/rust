@@ -1,6 +1,9 @@
 advent-of-code
 valence-examples
-# Cargo.lock # remove all of em because we dont need em
+wordlearn
+quizevents
+cyclerebornsettings
+# Cargo.lock # its better to have them
 
 # for keeping exe files
 # learn-rust projects
