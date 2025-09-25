@@ -39,8 +39,9 @@ fn handle_args(mut args: Vec<String>, size: u32) -> Option<Options> {
 -n, --numbers\t\tDisplay the current iteration.
 -c, --colo[u]r\t\tEnable rainbow coloring for the text.
 -w, --width <num>\tSet the amount of characters in one direction. The default is 1/8th of the screen width.
-It will crash if you set it to more than half of your screen length.
--l, --length <num>\tSet the iteration length for one arc. The default is 31 (pi*10).";
+\t\t\tIt will crash if you set it to more than half of your screen length.
+-l, --length <num>\tSet the iteration length for one arc. The default is 31 (pi*10).
+-s, --speed <num>\tSet the millisecond duration between each line draw. The default is 10.";
             for line in msg.split('\n') {
                 println!("{}", line);
             }
