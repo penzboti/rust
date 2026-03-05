@@ -163,6 +163,7 @@ fn display_time(offset: i32) {
             }
             print!(" ")
         }
+        execute!(stdout(), MoveToColumn(0)).expect("Failed to change cursor position");
         println!();
     }
 }
