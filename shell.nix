@@ -1,11 +1,15 @@
-{ pkgs ? import <nixpkgs> {} }:
+# https://ayats.org/blog/nix-rustup#rust-analyzer
+let
+  rust-overlay = fetchTarball "https://github.com/oxalica/rust-overlay/archive/master.tar.gz";
+  pkgs = import <nixpkgs> {
+    overlays = [(import rust-overlay)];
+  };
+  toolchain = pkgs.rust-bin.fromRustupToolchainFile ./toolchain.toml;
+in
   pkgs.mkShell {
-    # nativeBuildInputs is usually what you want -- tools you need to run
-    nativeBuildInputs = with pkgs.buildPackages; 
-    [
-      cargo
-      rustc
-      libgcc
-      rustup
+    packages = [
+      toolchain
     ];
-}
+
+    RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";
+  }
